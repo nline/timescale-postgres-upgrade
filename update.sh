@@ -2,7 +2,11 @@
 set -Eeuo pipefail
 
 # TODO scrape this somehow?
-supportedVersions=(
+newVersions=(
+	15
+    14
+)
+oldVersions=(
 	15
 	14
 	13
@@ -17,12 +21,27 @@ supportedVersions=(
 )
 suite='bullseye'
 
-for i in "${!supportedVersions[@]}"; do
-	new="${supportedVersions[$i]}"
+# Alias if it's linux
+unameOut="$(uname -s)"
+case "${unameOut}" in
+    Linux*)     machine=Linux;;
+    Darwin*)    machine=Mac;;
+    CYGWIN*)    machine=Cygwin;;
+    MINGW*)     machine=MinGw;;
+    *)          machine="UNKNOWN:${unameOut}"
+esac
+
+if [[ $machine == "Mac" ]]; then
+    echo "Using gsed"
+    alias sed='gsed'
+fi
+
+for i in "${!newVersions[@]}"; do
+	new="${newVersions[$i]}"
 	echo "# $new"
 	docker pull "postgres:$new-$suite" > /dev/null
 	(( j = i + 1 ))
-	for old in "${supportedVersions[@]:$j}"; do
+	for old in "${oldVersions[@]:$j}"; do
 		dir="$old-to-$new"
 		echo "- $old -> $new ($dir)"
 		oldVersion="$(
@@ -47,7 +66,7 @@ for i in "${!supportedVersions[@]}"; do
 			> "$dir/Dockerfile"
 		cp docker-upgrade "$dir/"
 		if [[ "$old" != 9.* ]]; then
-			sed -i '/postgresql-contrib-/d' "$dir/Dockerfile"
+			gsed -i '/postgresql-contrib-/d' "$dir/Dockerfile"
 		fi
 	done
 done
