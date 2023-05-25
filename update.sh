@@ -68,5 +68,9 @@ for i in "${!newVersions[@]}"; do
 		if [[ "$old" != 9.* ]]; then
 			gsed -i '/postgresql-contrib-/d' "$dir/Dockerfile"
 		fi
+
+        cd $dir
+        docker buildx build . --push --platform linux/arm64/v8,linux/amd64 --tag nline/timescale-upgrade:$dir
+        cd ..
 	done
 done
